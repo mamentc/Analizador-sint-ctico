@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Laboratorio de sintaxis · ESO</title>
+<style>
+:root{--ink:#18243a;--blue:#2458a6;--pale:#edf4ff;--line:#d8e0eb;--green:#18794e;--red:#b42318;--bg:#f4f6fa}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+header{background:#173b70;color:white;padding:22px max(20px,calc((100% - 1100px)/2))}header h1{margin:0;font-size:clamp(1.5rem,3vw,2.2rem)}header p{margin:5px 0 0;color:#dce9ff}
+main{max-width:1100px;margin:auto;padding:20px;display:grid;gap:16px}.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 2px 8px #172b4d0a}
+.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.field{display:grid;gap:5px;min-width:155px;flex:1}label{font-size:.84rem;font-weight:700;color:#45536a}select,button{font:inherit;border-radius:8px;padding:9px 11px;border:1px solid #b9c5d6;background:white;color:var(--ink)}button{cursor:pointer;font-weight:650}button.primary{background:var(--blue);color:white;border-color:var(--blue)}button.secondary{background:#eaf0f9}button:focus,select:focus{outline:3px solid #91b9ff;outline-offset:1px}
+.sentence{font-size:clamp(1.2rem,2.5vw,1.65rem);line-height:2.2;padding:10px 0}.word{display:inline-block;margin:3px 2px;padding:1px 5px;border:1px solid transparent;border-radius:6px;cursor:pointer}.word:hover{background:#eef3fa}.word.selected{background:#2458a6;color:white}.hint{font-size:.9rem;color:#4c5a70;background:#f0f5fd;border-left:4px solid #6e9be0;padding:10px 12px;border-radius:5px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.list{display:grid;gap:10px}.item{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:9px}.item-top{display:flex;justify-content:space-between;gap:8px;align-items:center}.item-word{font-weight:700}.item select{width:100%;font-size:.9rem}.small{font-size:.85rem;color:#5b6679}.badge{display:inline-block;border-radius:20px;background:#edf2f8;padding:3px 9px;font-size:.78rem;font-weight:700}.feedback{padding:14px;border-radius:10px}.ok{background:#e9f7ef;color:#145c39}.bad{background:#fff0ef;color:#8c2019}.model{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}.model li{margin:5px 0}.hidden{display:none!important}.footer{font-size:.82rem;color:#5d6879}
+.diagram-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff}.diagram{display:block;width:100%;min-height:80px}.diagram-note{font-size:.82rem;color:#5b6679;margin:6px 0 0}
+@media(max-width:760px){.grid{grid-template-columns:1fr}main{padding:12px}.panel{padding:14px}}
+</style></head>
+<body>
+<header><h1>Laboratorio de sintaxis</h1><p>Práctica de sintaxis para ESO · terminología adaptada a tus apuntes de la NGLE</p></header>
+<main>
+<section class="panel controls">
+ <div class="field"><label for="course">Curso</label><select id="course"><option value="1">1.º ESO</option><option value="2">2.º ESO</option><option value="3" selected>3.º ESO</option><option value="4">4.º ESO</option></select></div>
+ <div class="field"><label for="level">Dificultad</label><select id="level"><option value="basic">Básica</option><option value="inter" selected>Intermedia</option><option value="adv">Avanzada</option></select></div>
+ <div class="field"><label for="kind">Contenido</label><select id="kind"><option value="all">Variado</option><option value="simple">Oración simple</option><option value="coord">Coordinación</option><option value="sub">Subordinación</option><option value="se">Valores de «se»</option></select></div>
+ <button class="primary" id="new">🎲 Nueva oración</button><button class="secondary" id="reset">Reiniciar análisis</button>
+</section>
+<section class="panel">
+ <div class="item-top"><h2 style="margin:0;font-size:1.15rem">1. Analiza la oración</h2><span id="counter" class="badge"></span></div>
+ <p class="hint">Selecciona palabras contiguas haciendo clic en ellas. Después crea un elemento y elige su categoría y función. Puedes crear análisis dentro de otros (por ejemplo, un SN dentro de un SPrep).</p>
+ <div id="sentence" class="sentence" aria-label="Oración para analizar"></div>
+ <div class="controls"><button class="primary" id="add">＋ Crear elemento con la selección</button><button id="clear">Quitar selección</button><label style="display:flex;gap:7px;align-items:center"><input type="checkbox" id="so"> El sujeto está omitido / tácito</label></div><h3>Esquema visual del análisis</h3><div class="diagram-wrap"><svg id="diagram" class="diagram" role="img" aria-label="Esquema visual del análisis del alumno"></svg></div><div id="answerVisual" class="hidden" style="margin-top:18px"><h3>Análisis correcto de la oración</h3><p class="diagram-note">Este es el modelo completo para comparar con tu análisis. Las estructuras pequeñas aparecen arriba y las más amplias debajo.</p><div class="diagram-wrap"><svg id="answerDiagram" class="diagram" role="img" aria-label="Análisis sintáctico correcto de la oración"></svg></div></div><p class="diagram-note">El esquema conserva la oración completa arriba. Las estructuras pequeñas se dibujan primero, en las líneas superiores; las estructuras que abarcan más palabras aparecen debajo. Cada raya representa un tramo marcado.</p>
+</section>
+<section class="grid">
+ <div class="panel"><h2 style="margin-top:0;font-size:1.15rem">2. Tus elementos</h2><p class="small">Puedes analizar tanto la oración completa como los sintagmas y sus núcleos, determinantes, modificadores y complementos.</p><div id="items" class="list"><p class="small">Selecciona palabras para empezar.</p></div></div>
+ <div class="panel"><h2 style="margin-top:0;font-size:1.15rem">3. Corrección</h2><p class="small">Se comprueban los elementos que aparecen en el modelo de esta oración y la opción de sujeto omitido. La explicación indica qué falta, qué etiqueta revisar y por qué. No se corrigen automáticamente análisis libres que no estén incluidos en el modelo.</p><button class="primary" id="check">Corregir análisis</button> <button id="show">Ver solución modelo</button><div id="feedback" class="hidden"></div><div id="model" class="model hidden"></div></div>
+</section>
+<section class="panel"><h2 style="margin-top:0;font-size:1.1rem">Guía rápida de etiquetas</h2><p class="small">Sintagmas/unidades: SN, SAdj, SAdv, SPrep, SV, SConj, SInterj y tipos de oración compuesta. Funciones: sujeto agente/paciente/omitido, predicado, MOD, N, T, CN, CAdj, CAdv, aposiciones, CD, CI, dativos, C.Rég, CLA, complementos circunstanciales, atributo, atributo locativo/temporal, CPvo, CAg, CPer, NEXO y valores de SE. Las preposiciones se analizan como núcleo (N) del SPrep, no como enlaces. Se han seguido los apuntes aportados; no se pretende resolver automáticamente cualquier oración libre.</p><p class="footer">Aplicación local: no necesita cuenta ni envía respuestas a ningún servidor. El banco es deliberadamente más reducido: cada oración incluida tiene un análisis modelo más detallado. No se generan variantes automáticas que puedan alterar la gramática.</p></section>
+</main>
+<script>
+const U=["(Sin seleccionar)","SN","SAdj","SAdv","SPrep","SV","SConj","SInterj","O. Comp. Coord. Copulativa","O. Comp. Coord. Disyuntiva","O. Comp. Coord. Adversativa","O. Comp. Coord. Yuxtapuesta","O. Sub. Sust.","O. Sub. Rel. (con antecedente expreso)","O. Sub. Rel. Semilibre","O. Sub. Rel. Libre","O. Sub. Adv. Temporal","O. Sub. Adv. Modal","O. Sub. Adv. Causal","O. Sub. Adv. Final","O. Sub. Adv. Consecutiva","O. Sub. Adv. Comparativa","O. Sub. Adv. Ilativa","O. Sub. Adv. Condicional","O. Sub. Adv. Concesiva"];
+const F=["(Sin seleccionar)","Sujeto Agente","Sujeto Paciente","Sujeto Omitido / Tácito","Predicado","MOD","N","T","CN","CAdj","CAdv","Aposición Especificativa","Aposición Explicativa","CD","CI","Dativo de interés","Dativo ético","Dativo enfático","C.Rég","CLA","CCL","CCT","CCMod","CCCant","CCCom","CCI","CCMed","CCMat","CCF","CCBen","CCCau","Atributo","Atributo locativo","Atributo temporal","CPvo","CAg","CPer","NEXO","SE Variante LE/LES","SE Reflexivo","SE Recíproco","SE Marca Pasiva Refleja","SE Marca Impersonal"];
+// Each solution item: [start,end,unit,function]. Indices count visible tokens from left, punctuation remains attached to the word.
+const D=[
+// Banco reducido y revisado: cada solución desciende hasta los componentes internos relevantes.
+{c:1,l:"basic",k:"simple",t:"La casa parece antigua.",so:false,a:[
+[0,0,"(Sin seleccionar)","MOD"],[1,1,"(Sin seleccionar)","N"],[0,1,"SN","Sujeto Agente"],
+[2,2,"(Sin seleccionar)","N"],[3,3,"(Sin seleccionar)","N"],[3,3,"SAdj","Atributo"],[2,3,"SV","Predicado"]]},
+{c:1,l:"basic",k:"simple",t:"Los niños juegan en el parque.",so:false,a:[
+[0,0,"(Sin seleccionar)","MOD"],[1,1,"(Sin seleccionar)","N"],[0,1,"SN","Sujeto Agente"],
+[2,2,"(Sin seleccionar)","N"],[4,4,"(Sin seleccionar)","MOD"],[5,5,"(Sin seleccionar)","N"],[4,5,"SN","T"],
+[3,3,"(Sin seleccionar)","N"],[3,5,"SPrep","CCL"],[2,5,"SV","Predicado"]]},
+{c:1,l:"inter",k:"simple",t:"Mi hermana Carmen ha llegado tarde.",so:false,a:[
+[0,0,"(Sin seleccionar)","MOD"],[1,1,"(Sin seleccionar)","N"],[2,2,"(Sin seleccionar)","N"],[2,2,"SN","Aposición Especificativa"],[0,2,"SN","Sujeto Agente"],
+[3,4,"(Sin seleccionar)","N"],[5,5,"(Sin seleccionar)","N"],[5,5,"SAdv","CCT"],[3,5,"SV","Predicado"]]},
+{c:1,l:"inter",k:"simple",t:"Compró un pan fresco.",so:true,a:[
+[0,0,"(Sin seleccionar)","N"],[1,1,"(Sin seleccionar)","MOD"],[2,2,"(Sin seleccionar)","N"],[3,3,"(Sin seleccionar)","N"],[3,3,"SAdj","MOD"],[1,3,"SN","CD"],[0,3,"SV","Predicado"]]},
+{c:2,l:"basic",k:"simple",t:"Los alumnos estudian en la biblioteca.",so:false,a:[
+[0,0,"(Sin seleccionar)","MOD"],[1,1,"(Sin seleccionar)","N"],[0,1,"SN","Sujeto Agente"],[2,2,"(Sin seleccionar)","N"],
+[4,4,"(Sin seleccionar)","MOD"],[5,5,"(Sin seleccionar)","N"],[4,5,"SN","T"],[3,3,"(Sin seleccionar)","N"],[3,5,"SPrep","CCL"],[2,5,"SV","Predicado"]]},
+{c:2,l:"adv",k:"simple",t:"El anciano fue ayudado por su vecina.",so:false,a:[
+[0,0,"(Sin seleccionar)","MOD"],[1,1,"(Sin seleccionar)","N"],[0,1,"SN","Sujeto Paciente"],[2,3,"(Sin seleccionar)","N"],
+[5,5,"(Sin seleccionar)","MOD"],[6,6,"(Sin seleccionar)","N"],[5,6,"SN","T"],[4,4,"(Sin seleccionar)","N"],[4,6,"SPrep","CAg"],[2,6,"SV","Predicado"]]},
+{c:3,l:"adv",k:"simple",t:"Se venden pisos en este hotel.",so:false,a:[
+[0,0,"(Sin seleccionar)","SE Marca Pasiva Refleja"],[1,1,"(Sin seleccionar)","N"],[2,2,"(Sin seleccionar)","N"],[2,2,"SN","Sujeto Paciente"],
+[4,4,"(Sin seleccionar)","MOD"],[5,5,"(Sin seleccionar)","N"],[4,5,"SN","T"],[3,3,"(Sin seleccionar)","N"],[3,5,"SPrep","CCL"],
+[0,1,"SV","Predicado",[[0,1],[3,5]]]]},
+{c:3,l:"inter",k:"se",t:"Juan se lavó la cara.",so:false,a:[
+[0,0,"(Sin seleccionar)","N"],[0,0,"SN","Sujeto Agente"],[1,1,"(Sin seleccionar)","SE Reflexivo"],[2,2,"(Sin seleccionar)","N"],
+[3,3,"(Sin seleccionar)","MOD"],[4,4,"(Sin seleccionar)","N"],[3,4,"SN","CD"],[1,4,"SV","Predicado"]]},
+{c:3,l:"inter",k:"simple",t:"Le prestarás el coche a tu hermano.",so:true,a:[
+[0,0,"(Sin seleccionar)","CI"],[1,1,"(Sin seleccionar)","N"],[2,2,"(Sin seleccionar)","MOD"],[3,3,"(Sin seleccionar)","N"],[2,3,"SN","CD"],
+[5,5,"(Sin seleccionar)","MOD"],[6,6,"(Sin seleccionar)","N"],[5,6,"SN","T"],[4,4,"(Sin seleccionar)","N"],[4,6,"SPrep","CI"],[0,6,"SV","Predicado"]]},
+{c:3,l:"inter",k:"coord",t:"Miguel compró un coche y su mujer vendió la moto.",so:false,a:[
+[0,0,"(Sin seleccionar)","N"],[0,0,"SN","Sujeto Agente"],[1,1,"(Sin seleccionar)","N"],[2,2,"(Sin seleccionar)","MOD"],[3,3,"(Sin seleccionar)","N"],[2,3,"SN","CD"],[1,3,"SV","Predicado"],
+[4,4,"(Sin seleccionar)","NEXO"],[5,5,"(Sin seleccionar)","MOD"],[6,6,"(Sin seleccionar)","N"],[5,6,"SN","Sujeto Agente"],[7,7,"(Sin seleccionar)","N"],[8,8,"(Sin seleccionar)","MOD"],[9,9,"(Sin seleccionar)","N"],[8,9,"SN","CD"],[7,9,"SV","Predicado"],
+[0,3,"O. Comp. Coord. Copulativa","(Sin seleccionar)"],[5,9,"O. Comp. Coord. Copulativa","(Sin seleccionar)"],[0,9,"O. Comp. Coord. Copulativa","(Sin seleccionar)"]]},
+{c:3,l:"adv",k:"sub",t:"El informe demuestra que el incendio fue provocado.",so:false,a:[
+[0,0,"(Sin seleccionar)","MOD"],[1,1,"(Sin seleccionar)","N"],[0,1,"SN","Sujeto Agente"],[2,2,"(Sin seleccionar)","N"],
+[4,4,"(Sin seleccionar)","MOD"],[5,5,"(Sin seleccionar)","N"],[4,5,"SN","Sujeto Agente"],[6,7,"(Sin seleccionar)","N"],[6,7,"SV","Predicado"],[3,3,"(Sin seleccionar)","NEXO"],[3,7,"O. Sub. Sust.","CD"],[2,7,"SV","Predicado"]]},
+{c:3,l:"inter",k:"sub",t:"Se marchó porque tenía una cita pendiente.",so:true,a:[
+[0,1,"(Sin seleccionar)","N"],[4,4,"(Sin seleccionar)","MOD"],[5,5,"(Sin seleccionar)","N"],[6,6,"(Sin seleccionar)","N"],[6,6,"SAdj","MOD"],[4,6,"SN","CD"],[3,3,"(Sin seleccionar)","N"],[2,2,"(Sin seleccionar)","NEXO"],[2,6,"O. Sub. Adv. Causal","CCCau"],[0,6,"SV","Predicado"]]},
+{c:4,l:"basic",k:"simple",t:"Mi padre es profesor.",so:false,a:[
+[0,0,"(Sin seleccionar)","MOD"],[1,1,"(Sin seleccionar)","N"],[0,1,"SN","Sujeto Agente"],[2,2,"(Sin seleccionar)","N"],[3,3,"(Sin seleccionar)","N"],[3,3,"SN","Atributo"],[2,3,"SV","Predicado"]]},
+{c:4,l:"inter",k:"simple",t:"El libro está sobre la mesa.",so:false,a:[
+[0,0,"(Sin seleccionar)","MOD"],[1,1,"(Sin seleccionar)","N"],[0,1,"SN","Sujeto Agente"],[2,2,"(Sin seleccionar)","N"],[4,4,"(Sin seleccionar)","MOD"],[5,5,"(Sin seleccionar)","N"],[4,5,"SN","T"],[3,3,"(Sin seleccionar)","N"],[3,5,"SPrep","Atributo locativo"],[2,5,"SV","Predicado"]]}
+];
+
+// No se generan variantes automáticas: cambiar palabras sin revisar el análisis puede invalidar la solución modelo.
+
+let current, chosen=[], boxes=[], history=[];
+const $=id=>document.getElementById(id);
+function tokens(s){return s.match(/\S+/g)||[]}
+function filtered(){let c=+$("course").value,l=$("level").value,k=$("kind").value;let arr=D.filter(x=>x.c===c&&(l==="adv"?x.l==="adv":l==="inter"?x.l!=="basic":x.l==="basic")&&(k==="all"||x.k===k));if(!arr.length)arr=D.filter(x=>x.c===c&&(k==="all"||x.k===k));if(!arr.length)arr=D.filter(x=>k==="all"||x.k===k);return arr}
+function next(){let arr=filtered().filter(x=>x!==current);if(!arr.length)arr=filtered();current=arr[Math.floor(Math.random()*arr.length)];chosen=[];boxes=[];$("answerVisual").classList.add("hidden");$("so").checked=!!current.so;$("feedback").className="hidden";$("model").className="model hidden";$("counter").textContent=`Oraciones con análisis detallado · ${filtered().length} disponibles`;drawSentence();drawBoxes()}
+function drawSentence(){let root=$("sentence");root.replaceChildren();tokens(current.t).forEach((w,i)=>{let b=document.createElement("button");b.type="button";b.className="word"+(chosen.includes(i)?" selected":"");b.textContent=w;b.dataset.index=i;b.setAttribute("aria-pressed",chosen.includes(i));b.onclick=()=>{chosen=chosen.includes(i)?chosen.filter(n=>n!==i):[...chosen,i].sort((a,b)=>a-b);drawSentence()};root.appendChild(b)});drawDiagram()}
+function rangesFor(b){return b.ranges||[[b.s,b.e]]}
+function spanSize(b){return rangesFor(b).reduce((n,r)=>n+(r[1]-r[0]+1),0)}
+function orderedBoxes(){
+ // Primero los tramos más pequeños; las estructuras que abarcan más palabras quedan debajo.
+ return boxes.map((b,i)=>({b,i})).sort((x,y)=>spanSize(x.b)-spanSize(y.b)||rangesFor(x.b)[0][0]-rangesFor(y.b)[0][0]||x.i-y.i).map(x=>x.b);
+}
+function drawDiagram(){
+ const svg=$("diagram");if(!svg||!current)return;svg.replaceChildren();
+ const words=[...$("sentence").querySelectorAll(".word")];if(!words.length)return;
+ const first=words[0].getBoundingClientRect(),last=words[words.length-1].getBoundingClientRect();
+ const ordered=orderedBoxes();
+ const width=Math.max(320,last.right-first.left+24), rowH=42, top=66, height=Math.max(100,top+ordered.length*rowH+18);
+ svg.setAttribute("viewBox",`0 0 ${width} ${height}`);svg.style.minWidth=width+"px";svg.setAttribute("height",height);
+ const ns="http://www.w3.org/2000/svg";
+ const make=(tag,attrs,text)=>{const el=document.createElementNS(ns,tag);Object.entries(attrs||{}).forEach(([k,v])=>el.setAttribute(k,v));if(text!==undefined)el.textContent=text;svg.appendChild(el);return el};
+ // La oración completa se representa dentro del propio esquema, token a token.
+ words.forEach((w,i)=>{const r=w.getBoundingClientRect(),x=(r.left+r.right)/2-first.left;make("text",{x,y:27,fill:"#18243a","font-size":16,"text-anchor":"middle","font-weight":600},w.textContent)});
+ make("line",{x1:5,y1:39,x2:width-5,y2:39,stroke:"#d8e0eb","stroke-width":1});
+ if(!boxes.length)make("text",{x:8,y:55,fill:"#53627a","font-size":12},"Selecciona palabras y crea elementos: las líneas aparecerán debajo de la oración.");
+ ordered.forEach((b,i)=>{
+  const ranges=rangesFor(b),y=top+i*rowH;let labelX=0;
+  ranges.forEach((rg,j)=>{const a=words[rg[0]],z=words[rg[1]];if(!a||!z)return;const ar=a.getBoundingClientRect(),zr=z.getBoundingClientRect();const x1=ar.left-first.left+3,x2=zr.right-first.left-3; if(j===0)labelX=(x1+x2)/2;
+   make("line",{x1,y1:y,x2,y2:y,stroke:"#2458a6","stroke-width":2.5,"stroke-linecap":"round"});
+   make("line",{x1,y1:y-5,x2:x1,y2:y+5,stroke:"#2458a6","stroke-width":1.5});make("line",{x1:x2,y1:y-5,x2:x2,y2:y+5,stroke:"#2458a6","stroke-width":1.5});
+  });
+  const label=[b.u!==U[0]?b.u:"",b.f!==F[0]?b.f:""].filter(Boolean).join(" · ")||`Elemento ${i+1}`;
+  make("text",{x:labelX,y:y-7,fill:"#18243a","font-size":11,"text-anchor":"middle"},label.length>42?label.slice(0,39)+"…":label);
+ });
+}
+function opts(arr,sel){let s=document.createElement("select");arr.forEach(v=>{let o=document.createElement("option");o.value=v;o.textContent=v;s.appendChild(o)});s.value=sel;return s}
+function drawBoxes(){let root=$("items");root.replaceChildren();if(!boxes.length){let p=document.createElement("p");p.className="small";p.textContent="Todavía no has creado elementos.";root.appendChild(p);return}boxes.forEach((b,i)=>{let el=document.createElement("div");el.className="item";let top=document.createElement("div");top.className="item-top";let name=document.createElement("span");name.className="item-word";name.textContent=rangesFor(b).map(r=>tokens(current.t).slice(r[0],r[1]+1).join(" ")).join(" … ");let del=document.createElement("button");del.textContent="Eliminar";del.onclick=()=>{boxes.splice(i,1);drawBoxes();drawDiagram()};top.append(name,del);let a=opts(U,b.u),f=opts(F,b.f);a.setAttribute("aria-label","Categoría del elemento");f.setAttribute("aria-label","Función sintáctica");a.onchange=()=>{b.u=a.value;drawDiagram()};f.onchange=()=>{b.f=f.value;drawDiagram()};let range=document.createElement("div");range.className="small";range.textContent=`Tramo(s): ${rangesFor(b).map(r=>`${r[0]+1}–${r[1]+1}`).join(", ")}`;el.append(top,range,a,f);root.appendChild(el)})}
+$("add").onclick=()=>{if(!chosen.length){alert("Selecciona primero una o varias palabras.");return}let ranges=[],start=chosen[0],last=chosen[0];for(let i=1;i<chosen.length;i++){if(chosen[i]===last+1){last=chosen[i]}else{ranges.push([start,last]);start=last=chosen[i]}}ranges.push([start,last]);boxes.push({s:ranges[0][0],e:ranges[ranges.length-1][1],ranges,u:U[0],f:F[0]});chosen=[];drawSentence();drawBoxes();drawDiagram()};
+$("clear").onclick=()=>{chosen=[];drawSentence()};
+$("new").onclick=next;
+$("reset").onclick=()=>{chosen=[];boxes=[];$("answerVisual").classList.add("hidden");$("feedback").className="hidden";$("model").className="model hidden";drawSentence();drawBoxes()};
+function keyForRanges(ranges,u,f){const category=f==="N"?"":u;return ranges.map(r=>r.join("-")).join(",")+"|"+category+"|"+f}
+function expectedKey(x){return keyForRanges(x[4]||[[x[0],x[1]]],x[2],x[3])}
+function boxKey(b){return keyForRanges(rangesFor(b),b.u,b.f)}
+function spanText(ranges){return ranges.map(r=>tokens(current.t).slice(r[0],r[1]+1).join(" ")).join(" … ")}
+function explainFunction(f){const e={"Sujeto Agente":"Es el sintagma que concuerda con el verbo y del que se dice algo; en una oración activa suele realizar la acción.","Sujeto Paciente":"Es el sujeto que recibe la acción en una oración pasiva; concuerda con el verbo.","Sujeto Omitido / Tácito":"No aparece escrito, pero se recupera por la forma verbal o por el contexto.","Predicado":"Es la parte de la oración cuyo núcleo es el verbo y que expresa algo del sujeto; si el sujeto está omitido, el predicado puede constituir toda la oración visible.","N":"Es el núcleo del sintagma: la palabra principal que organiza el grupo.","MOD":"Modifica o determina al núcleo dentro del sintagma, según la etiqueta usada en los apuntes.","CD":"Complementa al verbo y suele poder sustituirse por lo, la, los o las; en ciertos casos puede pasar a sujeto paciente.","CI":"Indica normalmente el destinatario o experimentante; suele sustituirse por le o les.","T":"Es el término de una preposición: el sintagma que aparece después de ella.","CN":"Complementa a un nombre dentro del sintagma nominal.","NEXO":"Une elementos u oraciones y expresa la relación entre ellos.","SE Marca Pasiva Refleja":"Con un verbo en forma activa y concordancia con el sujeto paciente, forma una construcción de pasiva refleja.","SE Marca Impersonal":"Forma una construcción impersonal: no hay sujeto sintáctico y el verbo aparece normalmente en tercera persona del singular.","SE Reflexivo":"Indica que el referente del sujeto coincide con el del pronombre; puede ser CD o CI según la oración.","SE Recíproco":"Expresa una acción mutua entre los participantes del sujeto plural; puede ser CD o CI según la oración.","Atributo":"Aporta una propiedad o identificación del sujeto con verbos copulativos como ser, estar o parecer.","C.Rég":"Es un complemento exigido o seleccionado por el verbo, introducido por una preposición determinada.","CCL":"Indica lugar.","CCT":"Indica tiempo.","CPvo":"Expresa una propiedad o estado relacionado con el verbo y con un participante de la oración.","CAg":"En una pasiva, indica quién realiza la acción y suele ir introducido por por."};return e[f]||"Comprueba la etiqueta con la definición de tus apuntes y con la relación que mantiene este tramo con el verbo o con el núcleo al que complementa."}
+function renderAnswerDiagram(highlightErrors=false){
+ const host=$("answerVisual"),svg=$("answerDiagram");if(!host||!svg||!current)return;
+ host.classList.remove("hidden");svg.replaceChildren();
+ const words=tokens(current.t),items=current.a.map(x=>({ranges:x[4]||[[x[0],x[1]]],u:x[2],f:x[3]}));
+ const size=x=>x.ranges.reduce((n,r)=>n+r[1]-r[0]+1,0);
+ items.sort((a,b)=>size(a)-size(b)||a.ranges[0][0]-b.ranges[0][0]);
+ const ns="http://www.w3.org/2000/svg";
+ const normRanges=r=>r.map(x=>x.join("-")).join(",");
+ const expectedKeyLocal=it=>{const ranges=it.ranges;const cat=it.f==="N"?"":it.u;return normRanges(ranges)+"|"+cat+"|"+it.f};
+ const actualKeys=new Set(boxes.map(b=>{const r=rangesFor(b);return normRanges(r)+"|"+(b.f==="N"?"":b.u)+"|"+b.f}));
+ const make=(tag,attrs,txt)=>{const el=document.createElementNS(ns,tag);Object.entries(attrs||{}).forEach(([k,v])=>el.setAttribute(k,v));if(txt!==undefined)el.textContent=txt;svg.appendChild(el);return el};
+ // Medir cada palabra con la fuente real del SVG para que los límites de las líneas
+ // coincidan con las palabras visibles, no con una estimación basada en caracteres.
+ const fontSize=17,gap=9,pad=20;
+ let cursor=pad;const positions=[];
+ words.forEach((word)=>{
+   const el=make("text",{x:cursor,y:23,fill:"#18243a","font-size":fontSize,"font-weight":700},word);
+   let w=0;try{w=el.getComputedTextLength()}catch(e){}
+   if(!w||!Number.isFinite(w))w=word.length*9;
+   positions.push({x1:cursor,x2:cursor+w,cx:cursor+w/2});cursor+=w+gap;
+ });
+ const width=Math.max(320,cursor-gap+pad),top=42,rowH=39,height=top+items.length*rowH+22;
+ svg.setAttribute("viewBox",`0 0 ${width} ${height}`);svg.setAttribute("width",width);svg.setAttribute("height",height);svg.style.width=width+"px";svg.style.minWidth="0";
+ make("line",{x1:pad,y1:31,x2:width-pad,y2:31,stroke:"#cbd5e1","stroke-width":1});
+ items.forEach((it,i)=>{
+   const y=top+i*rowH,spans=it.ranges;
+   const isMissing=highlightErrors&&!actualKeys.has(expectedKeyLocal(it));
+   const stroke=isMissing?"#dc2626":"#2563eb", labelFill=isMissing?"#b91c1c":"#183153";
+   spans.forEach(r=>{
+     if(r[0]<0||r[1]>=words.length)return;
+     const x1=positions[r[0]].x1,x2=positions[r[1]].x2;
+     make("line",{x1,y1:y,x2,y2:y,stroke,"stroke-width":2.4,"stroke-linecap":"round"});
+     make("line",{x1,y1:y-4,x2:x1,y2:y+4,stroke,"stroke-width":1.4});
+     make("line",{x1:x2,y1:y-4,x2,y2:y+4,stroke,"stroke-width":1.4});
+   });
+   const first=spans[0],last=spans[spans.length-1];
+   if(!first||!last)return;
+   const label=(it.u!==U[0]?it.u+" · ":"")+it.f;
+   const cx=(positions[first[0]].x1+positions[last[1]].x2)/2;
+   make("text",{x:cx,y:y-7,fill:labelFill,"font-size":12,"text-anchor":"middle","font-weight":isMissing?700:400},label);
+ });
+ if(highlightErrors){
+   make("text",{x:pad,y:height-5,fill:"#b91c1c","font-size":11},"En rojo: elementos del modelo que faltan o cuya etiqueta debes revisar.");
+ }
+}
+function check(){
+ renderAnswerDiagram(true);
+ const expected=current.a.map(x=>({key:expectedKey(x),ranges:x[4]||[[x[0],x[1]]],u:x[2],f:x[3]}));
+ const actual=boxes.map(b=>({key:boxKey(b),ranges:rangesFor(b),u:b.u,f:b.f,b}));
+ const rangeKey=r=>r.map(x=>x.join("-")).join(",");
+ const expKeys=new Set(expected.map(x=>x.key)),actKeys=new Set(actual.map(x=>x.key));
+ const good=expected.filter(x=>actKeys.has(x.key)).length;
+ const missing=expected.filter(x=>!actKeys.has(x.key));
+ const labelMismatch=missing.filter(x=>actual.some(a=>rangeKey(a.ranges)===rangeKey(x.ranges)));
+ const trulyMissing=missing.filter(x=>!labelMismatch.includes(x));
+ const extras=actual.filter(a=>!expKeys.has(a.key)&&!expected.some(x=>rangeKey(x.ranges)===rangeKey(a.ranges)));
+ const subjectOK=$("so").checked===!!current.so;
+ const complete=missing.length===0&&extras.length===0&&subjectOK;
+ const score=Math.round(100*good/Math.max(1,expected.length));
+ const fb=$("feedback");fb.className="feedback "+(complete?"ok":"bad");fb.replaceChildren();
+ const h=document.createElement("strong");h.textContent=complete?"¡Has reproducido todos los elementos del modelo!":"Revisión del análisis";fb.append(h);
+ const p=document.createElement("p");p.textContent=`Coincidencias exactas: ${good} de ${expected.length}. Tramos correctos con etiquetas diferentes: ${labelMismatch.length}. Elementos que faltan: ${trulyMissing.length}. Elementos que no coinciden con el modelo: ${extras.length}. Coincidencia con el modelo: ${score}%. Este porcentaje solo compara con la solución guardada para esta oración; no es una nota global ni garantiza que el modelo esté completo.`;fb.append(p);
+ if(!subjectOK){const q=document.createElement("p");q.textContent=current.so?"Sujeto omitido: marca la casilla. El sujeto no está escrito, pero puede recuperarse por la forma verbal o el contexto.":"Sujeto omitido: desmarca la casilla. En el modelo de esta oración aparece un sujeto expreso.";fb.append(q)}
+ if(labelMismatch.length){const title=document.createElement("h4");title.textContent="Has marcado el tramo, pero revisa la etiqueta";fb.append(title);labelMismatch.forEach(x=>{const li=document.createElement("p");li.textContent=`«${spanText(x.ranges)}»: el tramo coincide, pero el modelo lo etiqueta como ${x.f==="N"?"Núcleo (solo tienes que marcar N; no hace falta elegir una categoría de sintagma)":`${x.u} · ${x.f}`}. ${explainFunction(x.f)}`;fb.append(li)})}
+ if(trulyMissing.length){const title=document.createElement("h4");title.textContent="Elementos del modelo que todavía faltan";fb.append(title);trulyMissing.forEach(x=>{const li=document.createElement("p");li.textContent=`Falta «${spanText(x.ranges)}»: ${x.f==="N"?"Núcleo (solo tienes que marcar N; no hace falta elegir una categoría de sintagma)":`${x.u} · ${x.f}`}. ${explainFunction(x.f)}`;fb.append(li)})}
+ if(extras.length){const title=document.createElement("h4");title.textContent="Elementos que no coinciden con la solución guardada";fb.append(title);extras.forEach(a=>{const li=document.createElement("p");li.textContent=`«${spanText(a.ranges)}»: has elegido ${a.u} · ${a.f}. Revisa si ese tramo y esa función son los que corresponden en esta oración. ${explainFunction(a.f)}`;fb.append(li)})}
+ const note=document.createElement("p");note.className="small";note.textContent="La corrección compara con una solución modelo concreta. Si falta un nivel del análisis o la solución modelo contiene un error, la aplicación no puede detectarlo por sí sola; el banco debe revisarse lingüísticamente.";fb.append(note)
+}
+function showModel(){renderAnswerDiagram();let root=$("model");root.className="model";root.replaceChildren();let h=document.createElement("h3");h.textContent="Solución modelo detallada";root.append(h);let ul=document.createElement("ul");const ordered=current.a.slice().sort((a,b)=>{const ra=a[4]||[[a[0],a[1]]],rb=b[4]||[[b[0],b[1]]];const sa=ra.reduce((n,r)=>n+r[1]-r[0]+1,0),sb=rb.reduce((n,r)=>n+r[1]-r[0]+1,0);return sa-sb||ra[0][0]-rb[0][0]});ordered.forEach(x=>{let li=document.createElement("li");const span=spanText(x[4]||[[x[0],x[1]]]);const label=x[2]==="(Sin seleccionar)"?(x[3]==="N"?"N (núcleo; no hace falta elegir categoría)":x[3]):`${x[2]} · ${x[3]}`;li.textContent=`«${span}»: ${label}`;ul.append(li)});root.append(ul);let note=document.createElement("p");note.className="small";note.textContent="La solución incluye los componentes internos relevantes: núcleos, modificadores, términos y sintagmas completos. Los núcleos se etiquetan solo como N; no necesitan una categoría de sintagma adicional. El banco es más reducido porque se han retirado las variantes automáticas y se prioriza que cada solución tenga más detalle.";root.append(note)}
+$("check").onclick=check;$("show").onclick=showModel;
+["course","level","kind"].forEach(id=>$(id).onchange=next);
+next();window.addEventListener("resize",drawDiagram);$("so").addEventListener("change",()=>{if(!$("feedback").classList.contains("hidden"))check()});
+</script></body></html>
